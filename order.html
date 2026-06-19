@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অর্ডার করুন - বড় বাড়ির ঘি</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;600;800&family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #FAFAEE;
+            --text-dark: #2B1810;
+            --accent-color: #C04A15;
+            --header-bg: #1A120C;
+            --white: #fff;
+        }
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .order-container {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            width: 90%;
+            max-width: 500px;
+            margin: 2rem 0;
+        }
+        h2 { font-family: 'Anek Bangla', sans-serif; text-align: center; color: var(--accent-color); font-size: 2rem; margin-top: 0;}
+        p.desc { text-align: center; font-size: 1.1rem; margin-bottom: 2rem; color: #555;}
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 0.8rem; border: 1px solid #ddd;
+            border-radius: 8px; font-family: inherit; font-size: 1rem; box-sizing: border-box; transition: 0.3s;
+        }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 5px rgba(192, 74, 21, 0.2); }
+        .readonly-input { background: #f9f9f9; font-weight: bold; color: var(--accent-color); }
+        
+        .btn-submit {
+            background: var(--accent-color); color: var(--white); border: none;
+            padding: 1rem; width: 100%; border-radius: 8px; font-size: 1.2rem;
+            font-family: 'Anek Bangla', sans-serif; font-weight: bold; cursor: pointer;
+            transition: 0.3s; margin-top: 1rem;
+        }
+        .btn-submit:hover { background: #a33b0e; }
+        
+        #successMessage { display: none; text-align: center; padding: 2rem; }
+        #successMessage h3 { color: #16a34a; font-size: 1.5rem; margin-top: 0; }
+        #orderForm { transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div class="order-container">
+        <div id="successMessage">
+            <h3>🎉 আপনার অর্ডার সফল হয়েছে!</h3>
+            <p>আমাদের একজন প্রতিনিধি খুব শীঘ্রই আপনার সাথে যোগাযোগ করবেন। ধন্যবাদ!</p>
+            <button class="btn-submit" onclick="location.reload()" style="margin-top: 2rem; background: #333;">নতুন অর্ডার করুন</button>
+        </div>
+
+        <form id="orderForm">
+            <h2>অর্ডার করুন</h2>
+            <p class="desc">বড় বাড়ির খাঁটি ঘি সরাসরি আপনার দোরগোড়ায়।</p>
+            
+            <div class="form-group">
+                <label>আপনার নাম (Name) *</label>
+                <input type="text" id="orderName" required placeholder="আপনার পূর্ণ নাম">
+            </div>
+            <div class="form-group">
+                <label>ফোন নম্বর (Phone) *</label>
+                <input type="tel" id="orderPhone" required placeholder="017/018/019/015/016/013...">
+            </div>
+            <div class="form-group">
+                <label>পূর্ণ ঠিকানা (Address) *</label>
+                <textarea id="orderAddress" rows="2" required placeholder="বাড়ি নং, রাস্তা, এলাকা"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>জেলা ও থানা *</label>
+                    <input type="text" id="orderState" required placeholder="যেমন: ঢাকা, মিরপুর">
+                </div>
+                <div class="form-group">
+                    <label>পোস্টাল কোড</label>
+                    <input type="text" id="orderZip" placeholder="যেমন: ১২১৬">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>অতিরিক্ত নোট (Optional)</label>
+                <textarea id="orderNote" rows="2" placeholder="কুরিয়ারের জন্য কোনো মেসেজ..."></textarea>
+            </div>
+
+            <div class="form-row" style="background:var(--bg-color); padding: 1rem; border-radius: 8px; border: 1px solid #eee; margin-bottom: 1rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>পরিমাণ (কেজি)</label>
+                    <input type="number" id="orderQty" value="1" min="1" oninput="calcTotal()" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>ঘিয়ের মূল্য (টাকা)</label>
+                    <input type="text" id="orderGheePrice" value="1500" readonly class="readonly-input">
+                </div>
+            </div>
+
+            <!-- Price Breakdown -->
+            <div style="background: #FFF8F0; border: 1px solid #f0d5c4; border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; font-size: 1.05rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                    <span>ঘিয়ের মূল্য</span>
+                    <span id="gheeSubtotal">৳1500</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; color: #888;">
+                    <span>ডেলিভারি চার্জ (একবার)</span>
+                    <span>৳150</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; border-top: 1px solid #f0d5c4; padding-top: 0.6rem; margin-top: 0.4rem; color: var(--accent-color);">
+                    <span>সর্বমোট (পরিশোধযোগ্য)</span>
+                    <span id="orderGrandTotal">৳1650</span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">অর্ডার নিশ্চিত করুন</button>
+        </form>
+    </div>
+
+    <script>
+        const PRICE_PER_KG = 1500;
+        const DELIVERY_CHARGE = 150;
+
+        function calcTotal() {
+            const qty = parseInt(document.getElementById('orderQty').value) || 1;
+            const gheePrice = qty * PRICE_PER_KG;
+            const grandTotal = gheePrice + DELIVERY_CHARGE;
+
+            document.getElementById('orderGheePrice').value = gheePrice;
+            document.getElementById('gheeSubtotal').textContent = '৳' + gheePrice;
+            document.getElementById('orderGrandTotal').textContent = '৳' + grandTotal;
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.textContent = "অপেক্ষা করুন...";
+            submitBtn.disabled = true;
+
+            const qty = parseInt(document.getElementById('orderQty').value) || 1;
+            const grandTotal = qty * PRICE_PER_KG + DELIVERY_CHARGE;
+
+            const payload = {
+                name: document.getElementById('orderName').value,
+                phone: document.getElementById('orderPhone').value,
+                address: document.getElementById('orderAddress').value,
+                state: document.getElementById('orderState').value,
+                postal_code: document.getElementById('orderZip').value,
+                note: document.getElementById('orderNote').value,
+                quantity: qty,
+                delivery_charge: DELIVERY_CHARGE,
+                total_price: grandTotal
+            };
+
+            try {
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if(response.ok) {
+                    document.getElementById('orderForm').style.display = 'none';
+                    document.getElementById('successMessage').style.display = 'block';
+                } else {
+                    alert("অর্ডার সম্পূর্ণ করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।");
+                    submitBtn.textContent = "অর্ডার নিশ্চিত করুন";
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert("সার্ভারের সাথে কানেক্ট করা যাচ্ছে না। দয়া করে আপনার ইন্টারনেট চেক করুন।");
+                submitBtn.textContent = "অর্ডার নিশ্চিত করুন";
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

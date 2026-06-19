@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অ্যাডমিন প্যানেল - বড় বাড়ির ঘি</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;600;800&family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #FAFAEE;
+            --text-dark: #2B1810;
+            --accent-color: #C04A15;
+            --header-bg: #1A120C;
+            --white: #fff;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+        }
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        h1, h2, h3 { font-family: 'Anek Bangla', sans-serif; margin-top: 0;}
+        .header {
+            background-color: var(--header-bg);
+            color: var(--white);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 2rem auto;
+            padding: 0 5%;
+        }
+        
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .search-input {
+            padding: 0.8rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 300px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        .time-filter {
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-family: inherit;
+            font-size: 1rem;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+            text-align: center;
+            border-top: 4px solid var(--accent-color);
+        }
+        .stat-card.success-border { border-top-color: var(--success); }
+        .stat-card.danger-border { border-top-color: var(--danger); }
+        .stat-card.warning-border { border-top-color: var(--warning); }
+        
+        .stat-card h3 { margin: 0 0 0.5rem 0; font-size: 1rem; opacity: 0.7; }
+        .stat-card p { margin: 0; font-size: 1.8rem; font-weight: bold; color: var(--text-dark); }
+        
+        /* Action Bar */
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--accent-color); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.85rem; }
+
+        /* Table */
+        .table-responsive {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--white);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            font-size: 0.95rem;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th { background-color: #f4f0e6; font-weight: 600; }
+        
+        /* Select Colors */
+        .status-select {
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+        }
+        .status-pending { background-color: #fef3c7; color: var(--warning); border-color: #fde68a; }
+        .status-approved { background-color: #dcfce7; color: var(--success); border-color: #bbf7d0; }
+        .status-rejected { background-color: #fee2e2; color: var(--danger); border-color: #fecaca; }
+
+        .btn-group { display: flex; gap: 0.5rem; }
+        
+        /* Alerts */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--text-dark);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h2>বড় বাড়ির ঘি - ড্যাশবোর্ড V2</h2>
+        <a href="/" style="color: white; text-decoration: none;">ওয়েবসাইটে যান</a>
+    </header>
+
+    <div class="container">
+        
+        <div class="toolbar">
+            <select id="timeFilter" class="time-filter" onchange="applyFilters()">
+                <option value="lifetime">যাবতীয় সময় (Lifetime)</option>
+                <option value="yearly">এই বছর (This Year)</option>
+                <option value="monthly">এই মাস (This Month)</option>
+            </select>
+            <input type="text" id="searchInput" class="search-input" placeholder="নাম বা ফোন নম্বর দিয়ে খুঁজুন..." onkeyup="applyFilters()">
+            <button class="btn btn-outline" style="border-color: #0284c7; color: #0284c7; margin-left: auto;" onclick="copyMessengerLink()">🔗 মেসেঞ্জার লিংক কপি</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>মোট অর্ডার</h3>
+                <p id="stat-total">0</p>
+            </div>
+            <div class="stat-card warning-border">
+                <h3>পেন্ডিং</h3>
+                <p id="stat-pending">0</p>
+            </div>
+            <div class="stat-card success-border">
+                <h3>অনুমোদিত</h3>
+                <p id="stat-approved">0</p>
+            </div>
+            <div class="stat-card danger-border">
+                <h3>রিজেক্টেড</h3>
+                <p id="stat-rejected">0</p>
+            </div>
+            <div class="stat-card success-border">
+                <h3>বিক্রি (কেজি)</h3>
+                <p id="stat-kg">0 kg</p>
+            </div>
+            <div class="stat-card success-border">
+                <h3>মোট আয় (Approved)</h3>
+                <p id="stat-rev">৳0</p>
+            </div>
+        </div>
+
+        <div class="action-bar" style="align-items: center;">
+            <button class="btn btn-outline" onclick="downloadCSV('daily')">আজকের রিপোর্ট (CSV)</button>
+            <button class="btn btn-outline" onclick="downloadCSV('monthly')">এই মাসের রিপোর্ট (CSV)</button>
+            <button class="btn btn-primary" onclick="printAllInvoices()">লিস্টের সব প্রিন্ট</button>
+            
+            <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center;">
+                <input type="number" id="printFrom" placeholder="ID থেকে" style="width:80px; padding:0.4rem; border-radius:4px; border:1px solid #ddd; font-family: inherit;">
+                <span>-</span>
+                <input type="number" id="printTo" placeholder="ID পর্যন্ত" style="width:80px; padding:0.4rem; border-radius:4px; border:1px solid #ddd; font-family: inherit;">
+                <button class="btn btn-primary" onclick="printRange()">রেঞ্জ প্রিন্ট করুন</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#ID</th>
+                        <th>নাম ও ফোন</th>
+                        <th>ঠিকানা</th>
+                        <th>কেজি</th>
+                        <th>মূল্য</th>
+                        <th>স্ট্যাটাস</th>
+                        <th>অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-tbody">
+                    <tr><td colspan="7" style="text-align: center;">ডাটা লোড হচ্ছে...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="toast">কপি করা হয়েছে!</div>
+
+    <script>
+        let allOrders = [];
+        let filteredOrders = [];
+
+        document.addEventListener('DOMContentLoaded', fetchOrders);
+
+        async function fetchOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                allOrders = await res.json();
+                applyFilters(); // Apply initial filters (lifetime, no search)
+            } catch (err) {
+                console.error("Error fetching orders:", err);
+            }
+        }
+
+        function applyFilters() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const timeFilter = document.getElementById('timeFilter').value;
+            
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+
+            filteredOrders = allOrders.filter(order => {
+                // Search match
+                const matchSearch = order.name.toLowerCase().includes(searchText) || order.phone.includes(searchText);
+                
+                // Time match
+                const orderDate = new Date(order.created_at);
+                let matchTime = true;
+                if (timeFilter === 'yearly') {
+                    matchTime = orderDate.getFullYear() === currentYear;
+                } else if (timeFilter === 'monthly') {
+                    matchTime = orderDate.getFullYear() === currentYear && orderDate.getMonth() === currentMonth;
+                }
+
+                return matchSearch && matchTime;
+            });
+
+            renderOrders();
+            updateStats();
+        }
+
+        function renderOrders() {
+            const tbody = document.getElementById('orders-tbody');
+            tbody.innerHTML = '';
+            
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">কোনো অর্ডার পাওয়া যায়নি।</td></tr>';
+                return;
+            }
+
+            filteredOrders.forEach(order => {
+                const tr = document.createElement('tr');
+                const date = new Date(order.created_at).toLocaleString('bn-BD', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                
+                tr.innerHTML = `
+                    <td>
+                        <strong>#${order.id}</strong><br>
+                        <small style="opacity: 0.6">${date}</small>
+                    </td>
+                    <td>
+                        <strong>${order.name}</strong><br>
+                        ${order.phone}
+                    </td>
+                    <td><div style="max-width:250px">${order.address}, ${order.state} - ${order.postal_code}</div></td>
+                    <td><strong>${order.quantity}</strong> kg</td>
+                    <td>
+                        <div style="font-size:0.88rem; color:#666;">ঘি: ৳${order.total_price - (order.delivery_charge || 150)}</div>
+                        <div style="font-size:0.88rem; color:#888;">ডেলিভারি: ৳${order.delivery_charge || 150}</div>
+                        <div style="font-weight:bold; color: var(--accent-color);">৳${order.total_price}</div>
+                    </td>
+                    <td>
+                        <select class="status-select status-${order.status}" onchange="updateStatus(${order.id}, this)">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="approved" ${order.status === 'approved' ? 'selected' : ''}>Approved</option>
+                            <option value="rejected" ${order.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-outline btn-sm" onclick="printOrder(${order.id})" title="প্রিন্ট করুন">🖨️ প্রিন্ট</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateStats() {
+            let pending = 0, approved = 0, rejected = 0;
+            let totalKg = 0, totalRev = 0;
+
+            filteredOrders.forEach(o => {
+                if(o.status === 'pending') pending++;
+                if(o.status === 'approved') {
+                    approved++;
+                    totalKg += o.quantity;
+                    totalRev += o.total_price;
+                }
+                if(o.status === 'rejected') rejected++;
+            });
+
+            document.getElementById('stat-total').textContent = filteredOrders.length;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-approved').textContent = approved;
+            document.getElementById('stat-rejected').textContent = rejected;
+            document.getElementById('stat-kg').textContent = totalKg + ' kg';
+            document.getElementById('stat-rev').textContent = '৳' + totalRev.toLocaleString();
+        }
+
+        async function updateStatus(id, selectElement) {
+            const newStatus = selectElement.value;
+            selectElement.disabled = true;
+            try {
+                const res = await fetch(`/api/orders/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if(res.ok) {
+                    // Update classes dynamically
+                    selectElement.className = `status-select status-${newStatus}`;
+                    
+                    // Update local arrays logically
+                    const orderInAll = allOrders.find(o => o.id === id);
+                    if(orderInAll) orderInAll.status = newStatus;
+                    
+                    updateStats();
+                } else {
+                    alert('স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে।');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('হালনাগাদ ব্যর্থ হয়েছে। ইন্টারনেট সংযোগ পরীক্ষা করুন।');
+            } finally {
+                selectElement.disabled = false;
+            }
+        }
+
+        // copy functionality removed by request
+
+        function getPrintHTML(ordersToPrint) {
+            let html = '<html><head><title> চালান / লেবেল </title>';
+            html += `<style>
+                body { font-family: sans-serif; padding: 0; margin: 0; color: #000; }
+                .page { page-break-after: always; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box;}
+                @media print {
+                    @page { margin: 0; }
+                    body { -webkit-print-color-adjust: exact; }
+                }
+                .label-box { 
+                    border: 2px solid #000; 
+                    padding: 30px; 
+                    width: 500px; 
+                    max-width: 100%;
+                    font-size: 18px;
+                    line-height: 1.6;
+                    border-radius: 10px;
+                }
+                .header { text-align: center; font-weight: bold; margin-bottom: 25px; font-size: 24px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+                .section { margin-bottom: 20px; }
+                .title { font-weight: bold; text-decoration: underline; margin-bottom: 5px; color: #333;}
+                .bold { font-weight: bold; }
+                .highlight { background-color: #f0f0f0; padding: 10px; border-radius: 5px; margin-top: 15px;}
+            </style></head><body>`;
+
+            ordersToPrint.forEach(order => {
+                html += `
+                <div class="page">
+                    <div class="label-box">
+                        <div class="header">ডেলিভারি চালান - #${order.id}</div>
+                        
+                        <div class="section">
+                            <div class="title">প্রেরক (From):</div>
+                            <div class="bold">বড় বাড়ির ঘি</div>
+                            <div>সিরাজগঞ্জ সদর</div>
+                            <div>ফোন: 0151234567</div>
+                        </div>
+                        
+                        <div class="section" style="border-top: 1px dashed #ccc; padding-top: 20px;">
+                            <div class="title">প্রাপক (To):</div>
+                            <div class="bold">নাম: ${order.name}</div>
+                            <div class="bold">ফোন: ${order.phone}</div>
+                            <div>ঠিকানা: ${order.address}, ${order.state} - ${order.postal_code}</div>
+                        </div>
+
+                        <div class="section highlight">
+                            <div class="title">অর্ডার বিস্তারিত:</div>
+                            <div>ঘিয়ের পরিমাণ: <span class="bold">${order.quantity} কেজি</span></div>
+                            <div>কন্ডিশন/মোট মূল্য: <span class="bold">৳${order.total_price}</span></div>
+                            ${order.note ? `<div>নোট: ${order.note}</div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            html += '</body></html>';
+            return html;
+        }
+
+        function printOrder(id) {
+            const order = allOrders.find(o => o.id === id);
+            if (!order) return;
+            triggerPrint(getPrintHTML([order]));
+        }
+
+        function printAllInvoices() {
+            if(filteredOrders.length === 0) {
+                alert("প্রিন্ট করার জন্য কোনো অর্ডার নেই!");
+                return;
+            }
+            triggerPrint(getPrintHTML(filteredOrders));
+        }
+
+        function printRange() {
+            const startId = parseInt(document.getElementById('printFrom').value);
+            const endId = parseInt(document.getElementById('printTo').value);
+            
+            if(!startId || !endId || startId > endId) {
+                alert("সঠিক আইডি রেঞ্জ দিন (যেমন: ID 1 থেকে ID 5)");
+                return;
+            }
+
+            const ordersToPrint = allOrders.filter(o => o.id >= startId && o.id <= endId);
+            
+            if(ordersToPrint.length === 0) {
+                alert("এই রেঞ্জের মধ্যে কোনো অর্ডার পাওয়া যায়নি!");
+                return;
+            }
+
+            triggerPrint(getPrintHTML(ordersToPrint));
+        }
+
+        function copyMessengerLink() {
+            const link = window.location.origin + '/order';
+            navigator.clipboard.writeText(link).then(() => {
+                alert("মেসেঞ্জার অর্ডার লিংক কপি করা হয়েছে!\n\n" + link);
+            }).catch(err => {
+                console.error("Copy failed", err);
+                alert("কপি করা যায়নি, দয়া করে ম্যানুয়ালি কপি করুন: " + link);
+            });
+        }
+
+        function triggerPrint(html) {
+            const printWindow = window.open('', '_blank', 'height=800,width=800');
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 300);
+        }
+
+        function downloadCSV(type) {
+            const now = new Date();
+            let dataToExport = [];
+            
+            if(type === 'daily') {
+                const today = now.toDateString();
+                dataToExport = allOrders.filter(o => new Date(o.created_at).toDateString() === today);
+            } else if (type === 'monthly') {
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                dataToExport = allOrders.filter(o => {
+                    const d = new Date(o.created_at);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                });
+            }
+
+            if(dataToExport.length === 0) {
+                alert("রিপোর্ট ডাউনলোড করার জন্য কোনো ডাটা নেই।");
+                return;
+            }
+
+            // Generate CSV
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for excel utf-8 support
+            csvContent += "ID,Name,Phone,Address,State,Postal Code,Quantity (KG),Total Price (TK),Note,Status,Date\n";
+            
+            dataToExport.forEach(o => {
+                // Escape commas by quoting string
+                const row = [
+                    o.id,
+                    `"${o.name}"`,
+                    `"${o.phone}"`,
+                    `"${o.address}"`,
+                    `"${o.state}"`,
+                    `"${o.postal_code}"`,
+                    o.quantity,
+                    o.total_price,
+                    `"${o.note || ''}"`,
+                    o.status,
+                    `"${new Date(o.created_at).toLocaleString('bn-BD')}"`
+                ].join(",");
+                csvContent += row + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `BoroBarirGhi_Sales_${type}_${now.getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
